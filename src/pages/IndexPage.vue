@@ -30,9 +30,10 @@
       />
     </section>
     <template v-if="weatherData">
+      <div class="city-name">{{ weatherData.city.name }}</div> <!-- Styled city name -->
       <section v-for="(day, index) in weatherData.list" :key="index" class="col text-white text-center">
-        <div class="text-h4 text-weight-light">{{ weatherData.city.name }}</div>
         <div class="text-h6 text-weight-light">
+          {{ formatDate(day.dt) }} <!-- Displaying the date -->
           {{ day.weather[0].main }}
         </div>
         <div class="text-h1 text-weight-thin q-my-lg relative-position">
@@ -72,11 +73,19 @@ const forecastOptions = [
   { label: '1 Day', value: 1 },
   { label: '3 Days', value: 3 },
   { label: '5 Days', value: 5 },
+  // Add more options as needed
 ];
 
 const temp = computed(() => {
   return Math.round(weatherData.value.list[0].temp.day);
 });
+
+const formatDate = (timestamp) => {
+  const date = new Date(timestamp * 1000);
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  return `${day < 10 ? '0' + day : day}.${month < 10 ? '0' + month : month}`;
+};
 
 const weatherImage = (icon) => {
   const weatherApiBaseUrl = 'http://openweathermap.org/img/wn';
@@ -152,10 +161,20 @@ const secondary = getCssVar('secondary');
     background: -webkit-linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
     background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
   }
+
+  .city-name {
+    font-size: 2rem; /* Increased font size */
+    font-weight: 500; /* Increased font weight */
+    color: white;
+    margin-bottom: 20px; /* Increased margin */
+    text-align: center; /* Center alignment */
+  }
 }
+
 .degree {
   top: -44px;
 }
+
 .skyline {
   flex: 0 0 100px;
   background: url(/skyline.png);
