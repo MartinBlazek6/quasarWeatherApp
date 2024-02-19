@@ -1,88 +1,3 @@
-<script setup lang="ts">
-  import { computed, inject, ref } from 'vue'
-  import { useQuasar, getCssVar } from 'quasar'
-
-  const $q = useQuasar()
-
-  const axios = inject('axios')
-
-  const searching = ref(false)
-  const searchText = ref('')
-  const weatherData = ref(null)
-  const lat = ref(null)
-  const lon = ref(null)
-
-  const weatherApiKey = 'b6cd22634f8f1c9a74704828f7f0523e'
-  const weatherApiBaseUrl = 'https://api.openweathermap.org/data/2.5'
-  const geoApiBaseUrl = 'https://freegeoip.app/json/'
-
-  const temp = computed(() => {
-    const fahrenheit = Math.round(weatherData.value.main.temp)
-    return (((fahrenheit - 32) * 5) / 9).toFixed(2)
-  })
-
-  const weatherImage = computed(() => {
-    const weatherApiBaseUrl = 'http://openweathermap.org/img/wn'
-    return `${weatherApiBaseUrl}/${weatherData.value.weather[0].icon}@2x.png`
-  })
-
-  const bgClass = computed(() => {
-    if (!weatherData.value) return null
-
-    if (weatherData.value.weather[0].icon.endsWith('n')) {
-      return 'bg-night'
-    } else {
-      return 'bg-day'
-    }
-  })
-
-  const getLocation = async () => {
-    searching.value = true
-    try {
-      if ($q.platform.is.electron) {
-        const result = await axios.get(geoApiBaseUrl)
-        lat.value = result.data.latitude
-        lon.value = result.data.longitude
-        getWeatherByCoords()
-        searching.value = false
-      } else {
-        navigator.geolocation.getCurrentPosition((position) => {
-          lat.value = position.coords.latitude
-          lon.value = position.coords.longitude
-          getWeatherByCoords()
-          searching.value = false
-        })
-      }
-    } catch (error) {}
-  }
-
-  const getWeatherBySearch = async () => {
-    try {
-      const endpoint = `${weatherApiBaseUrl}/weather?q=${searchText.value}&appid=${weatherApiKey}&units=imperial`
-      const response = await axios.get(endpoint)
-      weatherData.value = response.data
-      console.log('weatherData', weatherData.value)
-    } catch (error) {
-      console.error('getWeatherBySearch', error.message)
-      weatherData.value = null
-    }
-  }
-
-  const getWeatherByCoords = async () => {
-    try {
-      const endpoint = `${weatherApiBaseUrl}/weather?lat=${lat.value}&lon=${lon.value}&appid=${weatherApiKey}&units=imperial`
-      const response = await axios.get(endpoint)
-      weatherData.value = response.data
-      console.log('weatherData', weatherData.value)
-    } catch (error) {
-      console.error('getWeatherByCoords', error.message)
-      weatherData.value = null
-    }
-  }
-
-  const primary = getCssVar('primary')
-  const secondary = getCssVar('secondary')
-</script>
 <template>
   <q-page class="flex column" :class="bgClass">
     <q-inner-loading :showing="searching" color="white" />
@@ -129,29 +44,120 @@
     <section class="col skyline"></section>
   </q-page>
 </template>
+
+<script setup lang="ts">
+import { computed, inject, ref } from 'vue';
+import { useQuasar, getCssVar } from 'quasar';
+
+const $q = useQuasar();
+
+const axios = inject('axios');
+
+const searching = ref(false);
+const searchText = ref('');
+const weatherData = ref(null);
+
+const temp = computed(() => {
+  return Math.round(weatherData.value.main.temp);
+});
+
+const weatherImage = computed(() => {
+  const weatherApiBaseUrl = 'http://openweathermap.org/img/wn';
+  return `${weatherApiBaseUrl}/${weatherData.value.weather[0].icon}@2x.png`;
+});
+
+const bgClass = computed(() => {
+  if (!weatherData.value) return null;
+
+  if (weatherData.value.weather[0].icon.endsWith('n')) {
+    return 'bg-night';
+  } else {
+    return 'bg-day';
+  }
+});
+
+const getLocation = async () => {
+  searching.value = true;
+  try {
+    if ($q.platform.is.electron) {
+      // Electron specific code
+    } else {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        getWeatherByCoords(lat, lon);
+        searching.value = false;
+      });
+    }
+  } catch (error) {}
+};
+
+const getWeatherBySearch = async () => {
+  try {
+    // Search weather by city name
+  } catch (error) {
+    console.error('getWeatherBySearch', error.message);
+    weatherData.value = null;
+  }
+};
+
+const getWeatherByCoords = async (lat, lon) => {
+  try {
+    const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?lat=${lat}&lon=${lon}&cnt=1&appid=33aa634c216259f797f35e862f073b40&units=metric`;
+    const response = await axios.get(endpoint);
+    const responseData = response.data;
+    const weatherInfo = responseData.list[0];
+
+    weatherData.value = {
+      name: responseData.city.name,
+      weather: [{
+        main: weatherInfo.weather[0].main,
+        description: weatherInfo.weather[0].description,
+        icon: weatherInfo.weather[0].icon
+      }],
+      main: {
+        temp: weatherInfo.temp.day,
+        feels_like: weatherInfo.feels_like.day,
+        humidity: weatherInfo.humidity,
+        // Add other relevant properties as needed
+      },
+      // Add other properties as needed
+    };
+
+    console.log('weatherData', weatherData.value);
+  } catch (error) {
+    console.error('getWeatherByCoords', error.message);
+    weatherData.value = null;
+  }
+};
+
+const primary = getCssVar('primary');
+const secondary = getCssVar('secondary');
+</script>
+
 <style lang="scss">
-  .q-page {
-    background: v-bind(primary);
-    background: -webkit-linear-gradient(
+.q-page {
+  background: v-bind(primary);
+  background: -webkit-linear-gradient(
       to bottom,
       v-bind(secondary),
       v-bind(primary)
-    );
-    background: linear-gradient(to bottom, v-bind(secondary), v-bind(primary));
+  );
+  background: linear-gradient(to bottom, v-bind(secondary), v-bind(primary));
 
-    &.bg-night {
-      background: #0f2027;
-      background: -webkit-linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-      background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-    }
+  &.bg-night {
+    background: #0f2027;
+    background: -webkit-linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+    background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
   }
-  .degree {
-    top: -44px;
-  }
-  .skyline {
-    flex: 0 0 100px;
-    background: url(/skyline.png);
-    background-size: contain;
-    background-position: bottom;
-  }
+}
+.degree {
+  top: -44px;
+}
+.skyline {
+  flex: 0 0 100px;
+  background: url(/skyline.png);
+  background-size: contain;
+  background-position: bottom;
+}
 </style>
