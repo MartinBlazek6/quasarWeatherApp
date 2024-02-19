@@ -2,6 +2,7 @@
   <q-page class="flex column" :class="bgClass">
     <q-inner-loading :showing="searching" color="white" />
     <section class="col q-pt-lg q-px-md">
+      <!-- Search Input -->
       <q-input
         v-model="searchText"
         borderless
@@ -17,6 +18,7 @@
         </template>
       </q-input>
     </section>
+    <!-- Forecast Days Selector -->
     <section class="col q-px-md">
       <q-select
         v-model="forecastDays"
@@ -29,12 +31,28 @@
         @input="getWeatherBySearch"
       />
     </section>
+    <!-- Predefined Cities Dropdown -->
+    <section class="col q-px-md">
+      <q-select
+        v-model="selectedCity"
+        :options="cityOptions"
+        dark
+        label="Select City"
+        outlined
+        emit-value
+        map-options
+        @update:model-value="getWeatherBySelectedCity"
+      />
+    </section>
+    <!-- Weather Display -->
     <template v-if="weatherData">
-      <div class="city-name">{{ weatherData.city.name }}</div> <!-- Styled city name -->
+      <!-- Display City Name -->
+      <div class="city-name">{{ weatherData.city.name }}</div>
+      <!-- Weather Forecast -->
       <section class="col text-white text-center">
         <template v-for="(day, idx) in weatherData.list" :key="idx">
           <div class="text-h6 text-weight-light">
-            {{ formatDate(day.dt) }} <!-- Displaying the date -->
+            {{ formatDate(day.dt) }}
             {{ day.weather[0].main }}
           </div>
           <div class="text-h1 text-weight-thin q-my-lg relative-position">
@@ -47,6 +65,7 @@
         </template>
       </section>
     </template>
+    <!-- No Weather Data Available -->
     <template v-else>
       <section class="col column text-center text-white">
         <div class="col text-h2 text-weight-thin">Quasar<br />Weather</div>
@@ -84,6 +103,15 @@ const forecastOptions = [
   { label: '10 Days', value: 10 },
 ];
 
+// Predefined Cities
+const cityOptions = [
+  { label: 'České Budějovice', value: 'Ceske Budejovice, CZ' },
+  { label: 'New York', value: 'New York, US' },
+  { label: 'Sydney', value: 'Sydney, AU' }
+];
+
+const selectedCity = ref('');
+
 const formatDate = (timestamp) => {
   const date = new Date(timestamp * 1000);
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -100,19 +128,13 @@ const weatherImage = (icon) => {
 
 const bgClass = computed(() => {
   if (!weatherData.value) return null;
-
-  if (weatherData.value.list[0].weather[0].icon.endsWith('n')) {
-    return 'bg-night';
-  } else {
-    return 'bg-day';
-  }
+  return weatherData.value.list[0].weather[0].icon.endsWith('n') ? 'bg-night' : 'bg-day';
 });
 
 const getLocation = async () => {
   searching.value = true;
   try {
     if ($q.platform.is.electron) {
-      // Electron specific code
     } else {
       navigator.geolocation.getCurrentPosition((position) => {
         const lat = position.coords.latitude;
@@ -127,6 +149,7 @@ const getLocation = async () => {
 const getWeatherBySearch = async () => {
   try {
     const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?q=${searchText.value}&cnt=${forecastDays.value}&appid=33aa634c216259f797f35e862f073b40&units=metric`;
+    console.info(searchText.value);
     const response = await axios.get(endpoint);
     weatherData.value = response.data;
     console.log('weatherData', weatherData.value);
@@ -144,6 +167,19 @@ const getWeatherByCoords = async (lat, lon) => {
     console.log('weatherData', weatherData.value);
   } catch (error) {
     console.error('getWeatherByCoords', error.message);
+    weatherData.value = null;
+  }
+};
+
+const getWeatherBySelectedCity = async () => {
+  try {
+    const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?q=${selectedCity.value}&cnt=${forecastDays.value}&appid=33aa634c216259f797f35e862f073b40&units=metric`;
+    console.info(selectedCity.value);
+    const response = await axios.get(endpoint);
+    weatherData.value = response.data;
+    console.log('weatherData', weatherData.value);
+  } catch (error) {
+    console.error('getWeatherBySelectedCity', error.message);
     weatherData.value = null;
   }
 };
@@ -169,11 +205,11 @@ const secondary = getCssVar('secondary');
   }
 
   .city-name {
-    font-size: 2rem; /* Increased font size */
-    font-weight: 500; /* Increased font weight */
+    font-size: 2rem;
+    font-weight: 500;
     color: white;
-    margin-bottom: 20px; /* Increased margin */
-    text-align: center; /* Center alignment */
+    margin-bottom: 20px;
+    text-align: center;
   }
 }
 
