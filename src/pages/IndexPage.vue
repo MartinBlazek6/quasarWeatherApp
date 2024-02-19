@@ -31,18 +31,20 @@
     </section>
     <template v-if="weatherData">
       <div class="city-name">{{ weatherData.city.name }}</div> <!-- Styled city name -->
-      <section v-for="(day, index) in weatherData.list" :key="index" class="col text-white text-center">
-        <div class="text-h6 text-weight-light">
-          {{ formatDate(day.dt) }} <!-- Displaying the date -->
-          {{ day.weather[0].main }}
-        </div>
-        <div class="text-h1 text-weight-thin q-my-lg relative-position">
-          <span>{{ day.temp.day }}</span>
-          <span class="text-h4 relative-position degree">&deg;C</span>
-        </div>
-        <section class="col text-center">
-          <q-img :src="weatherImage(day.weather[0].icon)" alt="Weather Image" width="100px" />
-        </section>
+      <section class="col text-white text-center">
+        <template v-for="(day, idx) in weatherData.list" :key="idx">
+          <div class="text-h6 text-weight-light">
+            {{ formatDate(day.dt) }} <!-- Displaying the date -->
+            {{ day.weather[0].main }}
+          </div>
+          <div class="text-h1 text-weight-thin q-my-lg relative-position">
+            <span>{{ day.temp.day }}</span>
+            <span class="text-h4 relative-position degree">&deg;C</span>
+          </div>
+          <section class="col text-center">
+            <q-img :src="weatherImage(day.weather[0].icon)" alt="Weather Image" width="100px" />
+          </section>
+        </template>
       </section>
     </template>
     <template v-else>
@@ -71,20 +73,24 @@ const weatherData = ref(null);
 const forecastDays = ref(1);
 const forecastOptions = [
   { label: '1 Day', value: 1 },
+  { label: '2 Days', value: 2 },
   { label: '3 Days', value: 3 },
+  { label: '4 Days', value: 4 },
   { label: '5 Days', value: 5 },
-  // Add more options as needed
+  { label: '6 Days', value: 6 },
+  { label: '7 Days', value: 7 },
+  { label: '8 Days', value: 8 },
+  { label: '9 Days', value: 9 },
+  { label: '10 Days', value: 10 },
 ];
-
-const temp = computed(() => {
-  return Math.round(weatherData.value.list[0].temp.day);
-});
 
 const formatDate = (timestamp) => {
   const date = new Date(timestamp * 1000);
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = days[date.getDay()];
   const day = date.getDate();
   const month = date.getMonth() + 1;
-  return `${day < 10 ? '0' + day : day}.${month < 10 ? '0' + month : month}`;
+  return `${dayName}, ${day < 10 ? '0' + day : day}.${month < 10 ? '0' + month : month}`;
 };
 
 const weatherImage = (icon) => {
