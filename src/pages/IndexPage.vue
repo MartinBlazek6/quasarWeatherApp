@@ -17,19 +17,31 @@
         </template>
       </q-input>
     </section>
+    <section class="col q-px-md">
+      <q-select
+        v-model="forecastDays"
+        :options="forecastOptions"
+        dark
+        label="Forecast Days"
+        outlined
+        emit-value
+        map-options
+        @input="getWeatherBySearch"
+      />
+    </section>
     <template v-if="weatherData">
-      <section class="col text-white text-center">
-        <div class="text-h4 text-weight-light">{{ weatherData.name }}</div>
+      <section v-for="(day, index) in weatherData.list" :key="index" class="col text-white text-center">
+        <div class="text-h4 text-weight-light">{{ weatherData.city.name }}</div>
         <div class="text-h6 text-weight-light">
-          {{ weatherData.weather[0].main }}
+          {{ day.weather[0].main }}
         </div>
         <div class="text-h1 text-weight-thin q-my-lg relative-position">
-          <span>{{ temp }}</span>
+          <span>{{ day.temp.day }}</span>
           <span class="text-h4 relative-position degree">&deg;C</span>
         </div>
-      </section>
-      <section class="col text-center">
-        <q-img :src="weatherImage" alt="Weather Image" width="100px" />
+        <section class="col text-center">
+          <q-img :src="weatherImage(day.weather[0].icon)" alt="Weather Image" width="100px" />
+        </section>
       </section>
     </template>
     <template v-else>
@@ -50,26 +62,31 @@ import { computed, inject, ref } from 'vue';
 import { useQuasar, getCssVar } from 'quasar';
 
 const $q = useQuasar();
-
 const axios = inject('axios');
 
 const searching = ref(false);
 const searchText = ref('');
 const weatherData = ref(null);
+const forecastDays = ref(1);
+const forecastOptions = [
+  { label: '1 Day', value: 1 },
+  { label: '3 Days', value: 3 },
+  { label: '5 Days', value: 5 },
+];
 
 const temp = computed(() => {
-  return Math.round(weatherData.value.main.temp);
+  return Math.round(weatherData.value.list[0].temp.day);
 });
 
-const weatherImage = computed(() => {
+const weatherImage = (icon) => {
   const weatherApiBaseUrl = 'http://openweathermap.org/img/wn';
-  return `${weatherApiBaseUrl}/${weatherData.value.weather[0].icon}@2x.png`;
-});
+  return `${weatherApiBaseUrl}/${icon}@2x.png`;
+};
 
 const bgClass = computed(() => {
   if (!weatherData.value) return null;
 
-  if (weatherData.value.weather[0].icon.endsWith('n')) {
+  if (weatherData.value.list[0].weather[0].icon.endsWith('n')) {
     return 'bg-night';
   } else {
     return 'bg-day';
@@ -94,7 +111,10 @@ const getLocation = async () => {
 
 const getWeatherBySearch = async () => {
   try {
-    // Search weather by city name
+    const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?q=${searchText.value}&cnt=${forecastDays.value}&appid=33aa634c216259f797f35e862f073b40&units=metric`;
+    const response = await axios.get(endpoint);
+    weatherData.value = response.data;
+    console.log('weatherData', weatherData.value);
   } catch (error) {
     console.error('getWeatherBySearch', error.message);
     weatherData.value = null;
@@ -103,27 +123,9 @@ const getWeatherBySearch = async () => {
 
 const getWeatherByCoords = async (lat, lon) => {
   try {
-    const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?lat=${lat}&lon=${lon}&cnt=1&appid=33aa634c216259f797f35e862f073b40&units=metric`;
+    const endpoint = `https://api.openweathermap.org/data/2.5/forecast/daily?lat=${lat}&lon=${lon}&cnt=${forecastDays.value}&appid=33aa634c216259f797f35e862f073b40&units=metric`;
     const response = await axios.get(endpoint);
-    const responseData = response.data;
-    const weatherInfo = responseData.list[0];
-
-    weatherData.value = {
-      name: responseData.city.name,
-      weather: [{
-        main: weatherInfo.weather[0].main,
-        description: weatherInfo.weather[0].description,
-        icon: weatherInfo.weather[0].icon
-      }],
-      main: {
-        temp: weatherInfo.temp.day,
-        feels_like: weatherInfo.feels_like.day,
-        humidity: weatherInfo.humidity,
-        // Add other relevant properties as needed
-      },
-      // Add other properties as needed
-    };
-
+    weatherData.value = response.data;
     console.log('weatherData', weatherData.value);
   } catch (error) {
     console.error('getWeatherByCoords', error.message);
